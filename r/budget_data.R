@@ -21,8 +21,36 @@ df <- data %>%
   summarise(across(starts_with("FY20"), ~ sum(.x, na.rm = TRUE))) %>%
   pivot_longer(starts_with("FY20")) %>%
   separate(name, into = c("FY", "Type"), " ", extra = "merge") %>%
+  filter(`Service Area` != "DNU - Do Not Use") %>%
   mutate(
     `Budget Type` =
       case_when(grepl("Revised", Type) ~ "Revised",
                 grepl("Adopted", Type) ~ "Adopted"),
-    Type = ifelse(is.na(`Budget Type`), "Actuals", "Budget"))
+    Type = ifelse(is.na(`Budget Type`), "Actuals", "Budget"),
+    `Service Area` = str_sub(`Service Area`, 7, -1))
+
+# Summarized tables ####
+
+service_areas <- df %>%
+    group_by(`Service Area`, FY, Type, `Budget Type`) %>%
+    summarise(value = sum(value, na.rm = TRUE)
+)
+
+make_sa_lists <- function(df, sa) {
+  
+  df <- df %>%
+    filter(`Service Area` == "Budget & Finance")
+  
+  list(
+    actuals =
+      df %>%
+      filter(Type == "Actuals"),
+    budget =
+      df %>%
+      filter(Type == "Budget")
+  )
+    
+}
+
+tables <- map(unique(df$`Service Area`), ~make_sa_lists(service_areas, .)) %>%
+  set_names(unique(df$`Service Area`))
