@@ -36,15 +36,22 @@ data$clean <- data$orig %>%
 
 # Summarized tables ####
 
-service_areas <- df %>%
+data$service_areas <- data$clean %>%
     group_by(`Service Area`, FY, Type, `Budget Type`) %>%
     summarise(value = sum(value, na.rm = TRUE)
 )
 
-make_sa_lists <- function(df, sa) {
+data$citywide <- data$clean %>%
+  group_by(FY, Type, `Budget Type`) %>%
+  summarise(value = sum(value, na.rm = TRUE))
+
+
+make_summary_tables <- function(df, grouping) {
   
-  df <- df %>%
-    filter(`Service Area` == "Budget & Finance")
+  if(grouping != "Citywide") {
+    df <- df %>%
+      filter(`Service Area` == grouping)
+  }
   
   list(
     actuals =
@@ -54,8 +61,11 @@ make_sa_lists <- function(df, sa) {
       df %>%
       filter(Type == "Budget")
   )
-    
 }
 
-tables <- map(unique(df$`Service Area`), ~make_sa_lists(service_areas, .)) %>%
-  set_names(unique(df$`Service Area`))
+service_areas <- unique(data$clean$`Service Area`)
+
+tables <- map(service_areas, ~make_summary_tables(data$service_areas, .)) %>%
+  set_names(service_areas)
+
+tables$Citywide <- make_summary_tables(data$citywide, "Citywide")
