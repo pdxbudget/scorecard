@@ -1,19 +1,24 @@
 params <- list(
-  account = "Expense",
-  bureau = "Fund and Debt Management",
-  object = c("EMS - External Materials and Services",
-             "IMS - Internal Materials and Services",
-             "PERSONAL - Personnel")
+  include = list(
+    account = "Expense",
+    object = c("EMS - External Materials and Services",
+               "IMS - Internal Materials and Services",
+               "PERSONAL - Personnel")
+  ),
+  exclude = list(
+    bureau = "Fund and Debt Management"
+  )
 )
 
----
+#####
   
 library(tidyverse)
 library(readxl)
 
-data <- readxl::read_xlsx("inputs/AdHoc-FY17to25-2025.01.22.xlsx", "AdHoc-FY17to25-2025.01.22")
+data <- list(
+  orig = readxl::read_xlsx("inputs/AdHoc-FY17to25-2025.01.22.xlsx", "AdHoc-FY17to25-2025.01.22"))
 
-df <- data %>%
+data$clean <- data$orig %>%
   filter(`Account Name` == params$include$account,
          `Bureau Name` != params$exclude$bureau,
          `Major Object - Name` %in% params$include$object) %>%
