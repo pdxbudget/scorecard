@@ -36,36 +36,71 @@ data$clean <- data$orig %>%
 
 # Summarized tables ####
 
-data$service_areas <- data$clean %>%
-    group_by(`Service Area`, FY, Type, `Budget Type`) %>%
-    summarise(value = sum(value, na.rm = TRUE)
-)
-
-data$citywide <- data$clean %>%
-  group_by(FY, Type, `Budget Type`) %>%
-  summarise(value = sum(value, na.rm = TRUE))
-
-
 make_summary_tables <- function(df, grouping) {
   
-  if(grouping != "Citywide") {
-    df <- df %>%
-      filter(`Service Area` == grouping)
-  }
+  suppressMessages({
+    if(grouping != "Citywide") {
+      df <- df %>%
+        group_by(`Service Area`, `Bureau Name`, FY, Type, `Budget Type`) %>%
+        summarise(value = sum(value, na.rm = TRUE)) %>%
+        filter(`Service Area` == grouping)
+      
+      tables <- list(
+        # tables to populate Scorecard data
+        actuals =
+          df %>%
+          group_by(`Service Area`, FY, Type, `Budget Type`) %>%
+          summarise(value = sum(value, na.rm = TRUE)) %>%
+          filter(Type == "Actuals"),
+        budget =
+          df %>%
+          group_by(`Service Area`, FY, Type, `Budget Type`) %>%
+          summarise(value = sum(value, na.rm = TRUE)) %>%
+          filter(Type == "Budget"),
+        chart =
+          df %>%
+          group_by(`Service Area`, `Bureau Name`, FY, Type, `Budget Type`) %>%
+          summarise(value = sum(value, na.rm = TRUE)) %>%
+          filter(FY == "FY2023-24",
+                 `Budget Type` == "Revised" | Type == "Actuals")
+      )
+      
+    } else {
+      
+      df <- data$clean %>%
+        group_by(`Service Area`, FY, Type, `Budget Type`) %>%
+        summarise(value = sum(value, na.rm = TRUE))
+      
+      tables <- list(
+        # tables to populate Scorecard data
+        actuals =
+          df %>%
+          group_by(FY, Type, `Budget Type`) %>%
+          summarise(value = sum(value, na.rm = TRUE)) %>%
+          filter(Type == "Actuals"),
+        budget =
+          df %>%
+          group_by(FY, Type, `Budget Type`) %>%
+          summarise(value = sum(value, na.rm = TRUE)) %>%
+          filter(Type == "Budget"),
+        chart =
+          df %>%
+          group_by(`Service Area`, FY, Type, `Budget Type`) %>%
+          summarise(value = sum(value, na.rm = TRUE)) %>%
+          filter(FY == "FY2023-24",
+                 `Budget Type` == "Revised" | Type == "Actuals")
+      )
+    }
+  })
   
-  list(
-    actuals =
-      df %>%
-      filter(Type == "Actuals"),
-    budget =
-      df %>%
-      filter(Type == "Budget")
-  )
+  message(grouping, " summary table created")
+  
+  return(tables)
 }
 
 service_areas <- unique(data$clean$`Service Area`)
 
-tables <- map(service_areas, ~make_summary_tables(data$service_areas, .)) %>%
+tables <- map(service_areas, ~make_summary_tables(data$clean, .)) %>%
   set_names(service_areas)
 
 tables$Citywide <- make_summary_tables(data$citywide, "Citywide")
