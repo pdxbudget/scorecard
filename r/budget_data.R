@@ -14,6 +14,9 @@ params <- list(
   
 library(tidyverse)
 library(readxl)
+library(ggplot2)
+library(scales)
+library(viridisLite)
 
 data <- list(
   orig = readxl::read_xlsx("inputs/AdHoc-FY17to25-2025.01.22.xlsx", "AdHoc-FY17to25-2025.01.22"))
@@ -93,6 +96,8 @@ make_summary_tables <- function(df, grouping) {
     }
   })
   
+  tables <- map(tables, ungroup)
+  
   message(grouping, " summary table created")
   
   return(tables)
@@ -104,3 +109,22 @@ tables <- map(service_areas, ~make_summary_tables(data$clean, .)) %>%
   set_names(service_areas)
 
 tables$Citywide <- make_summary_tables(data$citywide, "Citywide")
+
+# Charts ####
+
+tables$Citywide$chart %>%
+  arrange(desc(value)) %>%
+  ggplot(aes(fill = Type, x = `Service Area`, y = value)) +
+  geom_bar(position = "dodge",
+           stat="identity") +
+  geom_text(aes(label = label_currency(accuracy = .1, scale_cut = cut_short_scale())(value)),
+            position = position_dodge(width = 1), hjust = -.05) +
+  scale_y_continuous(
+    labels = scales::label_currency(scale_cut = cut_short_scale()),
+    expand = expansion(mult = c(0, 0.1))) + 
+  scale_fill_manual(values = viridis(3)) +
+  labs(title="Citywide FY 23-24 Revised Budget vs. Actuals") +
+  coord_flip() +
+  theme_minimal()
+
+
