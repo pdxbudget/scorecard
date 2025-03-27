@@ -17,6 +17,9 @@ library(readxl)
 library(ggplot2)
 library(scales)
 library(viridisLite)
+library(magrittr)
+
+source("O:/Performance Team/Measurement/_ref/helper_functions.R")
 
 data <- list(
   orig = readxl::read_xlsx("inputs/AdHoc-FY17to25-2025.01.22.xlsx", "AdHoc-FY17to25-2025.01.22"))
@@ -109,6 +112,26 @@ tables <- map(service_areas, ~make_summary_tables(data$clean, .)) %>%
   set_names(service_areas)
 
 tables$Citywide <- make_summary_tables(data$citywide, "Citywide")
+
+# Export tables ####
+
+export_summary_tables <- function(grouping, grouping_list) {
+  
+  export_excel(
+    df = grouping_list[[grouping]]$budget,
+    tab_name = "Budget",
+    file_name = paste0("outputs/budget_data/", grouping, ".xlsx"),
+    type = "new")
+  
+  export_excel(
+    df = grouping_list[[grouping]]$actuals,
+    tab_name = "Actuals",
+    file_name = paste0("outputs/budget_data/", grouping, ".xlsx"),
+    type = "existing")
+}
+
+map(service_areas, ~export_summary_tables(., tables))
+export_summary_tables("Citywide", tables)
 
 # Charts ####
 
