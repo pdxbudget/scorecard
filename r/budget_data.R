@@ -1,4 +1,5 @@
 params <- list(
+  latest_adopted_fy = 25, # FY 20XX-YY, this value should be YY
   include = list(
     account = "Expense",
     object = c("EMS - External Materials and Services",
@@ -56,13 +57,24 @@ make_summary_tables <- function(df, grouping) {
         actuals =
           df %>%
           group_by(`Service Area`, FY, Type, `Budget Type`) %>%
-          summarise(value = sum(value, na.rm = TRUE)) %>%
-          filter(Type == "Actuals"),
+          summarise(`Actual Value` = sum(value, na.rm = TRUE)) %>%
+          filter(Type == "Actuals",
+                 FY != paste0("FY", "20", params$latest_adopted_fy - 1, "-",params$latest_adopted_fy)) %>%
+          ungroup() %>%
+          select(FY, `Actual Value`) %>%
+          arrange(desc(FY)),
         budget =
           df %>%
           group_by(`Service Area`, FY, Type, `Budget Type`) %>%
-          summarise(value = sum(value, na.rm = TRUE)) %>%
-          filter(Type == "Budget"),
+          summarise(`Actual Value` = sum(value, na.rm = TRUE)) %>% # not budget actuals, this is just the name of the column in Scorecard
+          filter(Type == "Budget") %>%
+          mutate(Type = paste(`Budget Type`, Type)) %>%
+          filter(
+            ((FY == paste0("FY", "20", params$latest_adopted_fy - 1, "-",params$latest_adopted_fy)) & Type == "Adopted Budget") |
+              (FY != paste0("FY", "20", params$latest_adopted_fy - 1, "-",params$latest_adopted_fy)) & Type == "Revised Budget") %>%
+          ungroup() %>%
+          select(FY, `Actual Value`, Comments = Type) %>%
+          arrange(desc(FY)),
         chart =
           df %>%
           group_by(`Service Area`, `Bureau Name`, FY, Type, `Budget Type`) %>%
@@ -82,24 +94,35 @@ make_summary_tables <- function(df, grouping) {
         actuals =
           df %>%
           group_by(FY, Type, `Budget Type`) %>%
-          summarise(value = sum(value, na.rm = TRUE)) %>%
-          filter(Type == "Actuals"),
+          summarise(`Actual Value` = sum(value, na.rm = TRUE)) %>%
+          filter(Type == "Actuals",
+                 FY != paste0("FY", "20", params$latest_adopted_fy - 1, "-",params$latest_adopted_fy)) %>%
+          ungroup() %>%
+          select(FY, `Actual Value`) %>%
+          arrange(desc(FY)),
         budget =
           df %>%
           group_by(FY, Type, `Budget Type`) %>%
-          summarise(value = sum(value, na.rm = TRUE)) %>%
-          filter(Type == "Budget"),
-        chart =
+          summarise(`Actual Value` = sum(value, na.rm = TRUE)) %>% # not budget actuals, this is just the name of the column in Scorecard
+          filter(Type == "Budget") %>%
+          mutate(Type = paste(`Budget Type`, Type)) %>%
+          filter(
+            ((FY == paste0("FY", "20", params$latest_adopted_fy - 1, "-",params$latest_adopted_fy)) & Type == "Adopted Budget") |
+              (FY != paste0("FY", "20", params$latest_adopted_fy - 1, "-",params$latest_adopted_fy)) & Type == "Revised Budget") %>%
+          ungroup() %>%
+          select(FY, `Actual Value`, Comments = Type) %>%
+          arrange(desc(FY)),
+        chart_budget_vs_actuals =
           df %>%
           group_by(`Service Area`, FY, Type, `Budget Type`) %>%
           summarise(value = sum(value, na.rm = TRUE)) %>%
           filter(FY == "FY2023-24",
-                 `Budget Type` == "Revised" | Type == "Actuals")
+                 `Budget Type` == "Revised" | Type == "Actuals") %>%
+          select(-`Budget Type`, -Type) %>%
+          mutate(Type = ifelse(Type == "Budget", "Revised Budget", Type))
       )
     }
   })
-  
-  tables <- map(tables, ungroup)
   
   message(grouping, " summary table created")
   
