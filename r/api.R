@@ -54,10 +54,10 @@ sc_read_objects <- function(objects, container_id = NA, test = TRUE) {
 
 
 sc_create_measure <- function(
-    measure_type, title, polarity = 1, scale = 0,
+    measure_type, container_id = NA, title, polarity = 1, scale = 0,
     unit, unit_prefix = FALSE, test_env = TRUE) {
   
-  # measure_type: string, 'indicators' or 'perfmeasures'
+  # measure_type: string, 'indicator' or 'performance measure'
   # title: string, a name for the measure
   # polarity: numeric, defaults to 1. 1 - Higher is Better, 2 - Lower is Better, 3 - Target Range, 4 - Do Not Display,5 - No Polarity
   # scale: numeric, defaults to 0. Number of decimal points to show.
@@ -68,8 +68,9 @@ sc_create_measure <- function(
   
   tryCatch({
     
-    if (is.null(measure_type) || !measure_type %in% c("indicators", "perfmeasures")) {
-      stop("'measure_type' argument must be: 'indicators' or 'perfmeasures'")
+    # see 'Scorecard Settings > Object Management > Object Types' for all the measure types in the system
+    if (is.null(measure_type) || !measure_type %in% c("indicator", "performance measure", "budget")) {
+      stop("'measure_type' argument must be: 'indicator', 'performance measure', or 'budget'")
     }
     
     if (is.null(title) || !is.character(title)) {
@@ -85,17 +86,15 @@ sc_create_measure <- function(
       req_body_json(list(siteCode = "Portland",
                          apiKey = Sys.getenv("SC_API_KEY"),
                          measureType = measure_type,
-                         # containerID = container_id,
-                         calculationTypeId: 1,
-                         calendarId: 1,
-                         colorBands: FALSE,
-                         isBestPractice: FALSE,
-                         polarityId: 1,
-                         scale: 1,
-                         title: title,
-                         measureType: measure_type,
-                         unitOfMeasure: unit,
-                         uoMisPrefix: unit_prefix),
+                         calculationType = 1,
+                         calendarId = 1,
+                         colorBands = FALSE,
+                         isBestPractice = FALSE,
+                         polarityType = polarity,
+                         scale = 1,
+                         title = title,
+                         unitOfMeasure = unit,
+                         uoMisPrefix = unit_prefix),
                     encode = "json") %>%
       req_perform() %>%
       resp_body_string() %>%
