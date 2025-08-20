@@ -161,19 +161,68 @@ export_summary_tables("Citywide", tables)
 
 # Charts ####
 
-tables$Citywide$chart %>%
-  arrange(desc(value)) %>%
-  ggplot(aes(fill = Type, x = `Service Area`, y = value)) +
-  geom_bar(position = "dodge",
-           stat="identity") +
-  geom_text(aes(label = label_currency(accuracy = .1, scale_cut = cut_short_scale())(value)),
-            position = position_dodge(width = 1), hjust = -.05) +
-  scale_y_continuous(
-    labels = scales::label_currency(scale_cut = cut_short_scale()),
-    expand = expansion(mult = c(0, 0.1))) + 
-  scale_fill_manual(values = viridis(3)) +
-  labs(title="Citywide FY 23-24 Revised Budget vs. Actuals") +
-  coord_flip() +
-  theme_minimal()
+make_charts <- function(grouping, grouping_list) {
+  
+  df <- grouping_list[[grouping]]$chart %>%
+    filter(value > 0)
+  
+  order <- df %>%
+    filter(Type == "Revised Budget") %>%
+    arrange(value)
+  
+  if(grouping != "Citywide") {
+    order <- order %>%
+      select(Bureau) %>%
+      pull(Bureau) 
+    
+    plot <- df %>%
+      arrange(desc(value)) %>%
+      ggplot(aes(fill = Type, x = Bureau, y = value))
+  } else {
+    order <- order %>%
+      select(`Service Area`) %>%
+      pull(`Service Area`)
+    
+    plot <- df %>%
+      arrange(desc(value)) %>%
+      ggplot(aes(fill = Type, x = `Service Area`, y = value))
+  }
+  
 
+  plot <- plot +
+    geom_bar(position = "dodge",
+             stat="identity") +
+    geom_text(aes(label = label_currency(accuracy = .1, scale_cut = cut_short_scale())(value)),
+              position = position_dodge(width = 1), hjust = -.05) +
+    scale_y_continuous(
+      labels = scales::label_currency(scale_cut = cut_short_scale()),
+      expand = expansion(mult = c(0, 0.2))) +
+    scale_x_discrete(limits = order, labels = function(x) str_wrap(x, width = 20)) +
+    scale_fill_manual(values = c("#FF7F0E", "#0B6BAD")) +
+    coord_flip() +
+    theme_minimal() +
+    theme(legend.position = "top")
+  
+  if(grouping != "Citywide") {
+    plot <- plot +
+      labs(title= paste0(paste0("FY ", "20", params$latest_adopted_fy - 2, "-",params$latest_adopted_fy - 1, " Revised Budget vs. Actuals")),
+           x = "Bureaus",
+           y = "Dollars",
+           fill = NULL)
+    
+    ggsave(paste0("outputs/budget_data/", grouping, " Budget vs Actuals.png"), plot, height = 3, units = "in")
+  } else {
+    plot <- plot +
+      labs(title= paste0(paste0("FY ", "20", params$latest_adopted_fy - 2, "-",params$latest_adopted_fy - 1, " Revised Budget vs. Actuals")),
+           x = "Service Areas / Offices",
+           y = "Dollars",
+           fill = NULL)
+    
+    ggsave(paste0("outputs/budget_data/", grouping, " Operating Budget vs Actuals.png"), plot)
+  }
+  
 
+}
+
+map(service_areas, ~make_charts(., tables))
+make_charts("Citywide", tables)
