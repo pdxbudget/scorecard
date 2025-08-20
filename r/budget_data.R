@@ -12,12 +12,11 @@ params <- list(
 )
 
 #####
-  
+
 library(tidyverse)
 library(readxl)
 library(ggplot2)
 library(scales)
-library(viridisLite)
 library(magrittr)
 
 source("O:/Performance Team/Measurement/_ref/helper_functions.R")
@@ -77,10 +76,13 @@ make_summary_tables <- function(df, grouping) {
           arrange(desc(FY)),
         chart =
           df %>%
-          group_by(`Service Area`, `Bureau Name`, FY, Type, `Budget Type`) %>%
+          group_by(`Service Area`, Bureau = `Bureau Name`, FY, Type, `Budget Type`) %>%
           summarise(value = sum(value, na.rm = TRUE)) %>%
-          filter(FY == "FY2023-24",
-                 `Budget Type` == "Revised" | Type == "Actuals")
+          filter(FY == paste0("FY", "20", params$latest_adopted_fy - 2, "-",params$latest_adopted_fy - 1),
+                 `Budget Type` == "Revised" | Type == "Actuals") %>%
+          mutate(Type = ifelse(Type == "Budget", "Revised Budget", Type)) %>%
+          ungroup() %>%
+          select(-`Budget Type`)
       )
       
     } else {
@@ -112,14 +114,15 @@ make_summary_tables <- function(df, grouping) {
           ungroup() %>%
           select(FY, `Actual Value`, Comments = Type) %>%
           arrange(desc(FY)),
-        chart_budget_vs_actuals =
+        chart =
           df %>%
           group_by(`Service Area`, FY, Type, `Budget Type`) %>%
           summarise(value = sum(value, na.rm = TRUE)) %>%
-          filter(FY == "FY2023-24",
+          filter(FY == paste0("FY", "20", params$latest_adopted_fy - 2, "-",params$latest_adopted_fy - 1),
                  `Budget Type` == "Revised" | Type == "Actuals") %>%
-          select(-`Budget Type`, -Type) %>%
-          mutate(Type = ifelse(Type == "Budget", "Revised Budget", Type))
+          mutate(Type = ifelse(Type == "Budget", "Revised Budget", Type)) %>%
+          ungroup() %>%
+          select(-`Budget Type`)
       )
     }
   })
