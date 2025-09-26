@@ -53,10 +53,11 @@ sc_read_objects <- function(objects, container_id = NA, test = TRUE) {
 
 
 sc_add_measure <- function(
-    measure_type, title, calendar = "fy", data_source, polarity = 1, scale = 0,
+    measure_type, title, container_id = NA, calendar = "fy", data_source, polarity = 1, scale = 0,
     unit, unit_prefix = FALSE, test_env = TRUE) {
   
   # measure_type: string, 'indicator' or 'performance measure'
+  # container_id: numeric, optional ID to identify container metric should be added to
   # title: string, a name for the measure
   # calendar: string, defaults to 'fy'. 'month', 'quarter', 'annual', 'half year', 'fy quarter', or 'fy'
   # polarity: numeric, defaults to 1. 1 - Higher is Better, 2 - Lower is Better, 3 - Target Range, 4 - Do Not Display,5 - No Polarity
@@ -90,6 +91,7 @@ sc_add_measure <- function(
       req_body_json(list(siteCode = "Portland",
                          apiKey = Sys.getenv("SC_API_KEY"),
                          measureType = measure_type,
+                         ContainerId = container_id,
                          calculationType = 1,
                          calendarId = case_match(calendar,
                            "month" ~ 1,
