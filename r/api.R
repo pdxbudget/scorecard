@@ -118,6 +118,48 @@ sc_add_measure <- function(
     
     warning("Error creating ", measure_type, ": ", title ," in Scorecard: ", cond)
     
+
+sc_add_container <- function(
+    type, title, scorecard_id = NA, test_env = TRUE) {
+  
+  # type: string, 'service area', 'bureau', or 'program offer'
+  # title: string, a name for the measure
+  # test_env: boolean, defaults to TRUE. TRUE sends the API request to the test environment (accessed at https://scorecard-test.clearimpact.com), whereas FALSE sends it to production.
+  
+  tryCatch({
+    
+    
+    # see 'Scorecard Settings > Object Management > Object Types' for all the container types in the system
+    if (is.null(type) || !type %in% c("service area", "bureau", "program offer")) {
+      stop("'type' argument must be: 'service area', 'bureau', or 'program offer'")
+    }
+    
+    if (is.null(title) || !is.character(title)) {
+      stop("'title' argument is required and must be a string")
+    }
+    
+    url <- ifelse(test_env,
+                  "https://api-test.clearimpact.com/api/containers/add",
+                  "https://api.resultsscorecard.com/api/containers/add")
+    
+    url %>%
+      request() %>%
+      req_body_json(list(siteCode = "Portland",
+                         apiKey = Sys.getenv("SC_API_KEY"),
+                         containerType = type,
+                         title = title),
+                    encode = "json") %>%
+      req_perform(verbosity = 2)
+  },
+  
+  error = function(cond) {
+    
+    warning("Error creating ", type, ": ", title ," in Scorecard: ", cond)
+    
+  }
+  )
+}
+
   }
   )
 }
