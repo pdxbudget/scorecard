@@ -52,12 +52,10 @@ sc_read_objects <- function(objects, container_id = NA, test_env = TRUE) {
 }
 
 
-
-
 sc_import_data <- function(
     measure_id, actual_value, target_value = NA, date, comment = NA, test_env = TRUE) {
   
-    # id [int](Required) - The unique Clear Impact Scorecard ID for the measure that data values are being imported into. Measure IDs can be found by downloading the measure list.
+  # id [int](Required) - The unique Clear Impact Scorecard ID for the measure that data values are being imported into. Measure IDs can be found by downloading the measure list.
   # actualValue [decimal] (Optional) - Integer data value for the actual value, up to 6 decimals
   # targetValue [decimal] (Optional) - Integer data value for the target value, up to 6 decimals
   # actualValueDate [dateTime] (Required) - Determines the time period to import the data value for, expressed as YYYY-MM-DD. To import values for a specific time period, use a date anywhere within that time period. For example, March 2013 runs from 2013-03-01 through 2013 - 03 - 31. So you can enter any date within this period, such as 2013-03-15.
@@ -76,15 +74,20 @@ sc_import_data <- function(
     
     url %>%
       request() %>%
-      req_body_json(list(siteCode = "Portland",
-                         apiKey = Sys.getenv("SC_API_KEY"),
-                         id = measure_id,
-                         actualValue = actual_value,
-                         targetValue = target_value,
-                         actualValueDate = lubridate::ymd(date),
-                         comment = comment),
-                    encode = "json") %>%
+      req_body_json(
+        list(
+          apiKey = Sys.getenv("SC_API_KEY"),
+          siteCode = "Portland",
+          values = list(
+            list(
+              id = measure_id,
+              actualValue = actual_value,
+              targetValue = target_value,
+              actualValueDate = lubridate::ymd(date),
+              comment = comment))),
+        encode = "json") %>%
       req_perform(verbosity = 2)
+
   },
   
   error = function(cond) {
